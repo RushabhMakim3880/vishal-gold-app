@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -5,36 +8,70 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Load signing config from key.properties
+val keyPropertiesFile = rootProject.file("key.properties")
+val keyProperties = Properties()
+if (keyPropertiesFile.exists()) {
+    keyProperties.load(FileInputStream(keyPropertiesFile))
+}
+
+
 android {
-    namespace = "com.vishalgoldapp"
+    namespace = "com.vishaljewelersapp"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = "17"
+    }
+
+    signingConfigs {
+        if (keyPropertiesFile.exists()) {
+            val alias = keyProperties.getProperty("keyAlias")
+            val keyPass = keyProperties.getProperty("keyPassword")
+            val storeFileStr = keyProperties.getProperty("storeFile")
+            val storePass = keyProperties.getProperty("storePassword")
+            
+            if (alias != null && keyPass != null && storeFileStr != null && storePass != null) {
+                create("release") {
+                    keyAlias = alias
+                    keyPassword = keyPass
+                    storeFile = file(storeFileStr)
+                    storePassword = storePass
+                }
+            }
+        }
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.vishalgoldapp"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        applicationId = "com.vishaljewelersapp"
         minSdk = flutter.minSdkVersion  // Firebase requires minimum SDK 21
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // Removed restrictive abiFilters to ensure compatibility across all architectures
+
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            val releaseConfig = signingConfigs.findByName("release")
+            if (releaseConfig != null) {
+                signingConfig = releaseConfig
+            }
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }
@@ -43,5 +80,12 @@ flutter {
     source = "../.."
 }
 
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // Play Integrity for App Check production support
+    implementation("com.google.android.play:integrity:1.4.0")
+}
+
 // Apply Google Services plugin for Firebase
 apply(plugin = "com.google.gms.google-services")
+

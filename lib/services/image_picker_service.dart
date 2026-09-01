@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:vishal_gold/services/firebase_service.dart';
+import 'package:vishal_jewelers/services/firebase_service.dart';
 
 /// A service to handle image picking and uploading
 class ImagePickerService {
@@ -23,7 +23,7 @@ class ImagePickerService {
         source: source,
         maxWidth: maxWidth?.toDouble(),
         maxHeight: maxHeight?.toDouble(),
-        imageQuality: imageQuality ?? 85,
+        imageQuality: imageQuality ?? 30,
       );
       return image;
     } catch (e) {
@@ -43,7 +43,7 @@ class ImagePickerService {
       final List<XFile> images = await _picker.pickMultiImage(
         maxWidth: maxWidth?.toDouble(),
         maxHeight: maxHeight?.toDouble(),
-        imageQuality: imageQuality ?? 85,
+        imageQuality: imageQuality ?? 30,
         limit: limit,
       );
       return images;
@@ -64,7 +64,7 @@ class ImagePickerService {
       source: source,
       maxWidth: maxWidth ?? 1920,
       maxHeight: maxHeight ?? 1920,
-      imageQuality: imageQuality ?? 85,
+      imageQuality: imageQuality ?? 30,
     );
 
     if (image == null) return null;
@@ -91,7 +91,7 @@ class ImagePickerService {
     final images = await pickMultipleImages(
       maxWidth: maxWidth ?? 1920,
       maxHeight: maxHeight ?? 1920,
-      imageQuality: imageQuality ?? 85,
+      imageQuality: imageQuality ?? 30,
       limit: limit,
     );
 
@@ -121,7 +121,7 @@ class ImagePickerService {
       source: source,
       maxWidth: 512,
       maxHeight: 512,
-      imageQuality: 90,
+      imageQuality: 30,
     );
 
     if (image == null) return null;

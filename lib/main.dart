@@ -1,39 +1,67 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:vishal_gold/services/firebase_service.dart';
-import 'package:vishal_gold/constants/app_colors.dart';
-import 'package:vishal_gold/constants/app_strings.dart';
-import 'package:vishal_gold/providers/auth_provider.dart';
-import 'package:vishal_gold/providers/cart_provider.dart';
-import 'package:vishal_gold/providers/product_provider.dart';
-import 'package:vishal_gold/providers/order_provider.dart';
-import 'package:vishal_gold/providers/wishlist_provider.dart';
-import 'package:vishal_gold/screens/splash_screen.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'firebase_options.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:flutter/foundation.dart';
+import 'package:vishal_jewelers/services/local_storage_service.dart';
+import 'package:vishal_jewelers/constants/app_colors.dart';
+import 'package:vishal_jewelers/constants/app_strings.dart';
+import 'package:vishal_jewelers/providers/auth_provider.dart';
+import 'package:vishal_jewelers/providers/cart_provider.dart';
+import 'package:vishal_jewelers/providers/product_provider.dart';
+import 'package:vishal_jewelers/providers/order_provider.dart';
+import 'package:vishal_jewelers/providers/wishlist_provider.dart';
+import 'package:vishal_jewelers/providers/preview_provider.dart';
+import 'package:vishal_jewelers/providers/notification_provider.dart';
+import 'package:vishal_jewelers/providers/language_provider.dart';
+import 'package:vishal_jewelers/providers/notification_settings_provider.dart';
+import 'package:vishal_jewelers/widgets/auth/auth_wrapper.dart';
+import 'package:vishal_jewelers/widgets/shared/presence_wrapper.dart';
+import 'package:vishal_jewelers/services/fcm_service.dart';
+
+/// Global navigator key — used by FCMService for deep-link navigation
+/// when a push notification is tapped from background/terminated state.
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    await LocalStorageService.init();
 
-  // Initialize Firebase
-  // Initialize Firebase
-  if (Platform.isAndroid) {
-    await Firebase.initializeApp(
-      options: const FirebaseOptions(
-        apiKey: 'AIzaSyDB5v9Aq7yPz6QRoLIBgPsvue5UcZgBQP0',
-        appId: '1:373212780191:android:a7bdbcba05e8bc3c5874aa',
-        messagingSenderId: '373212780191',
-        projectId: 'vishal-gold-app',
-        storageBucket: 'vishal-gold-app.firebasestorage.app',
-      ),
+    // --- Firebase Setup ---
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+
+    await FirebaseAppCheck.instance.activate(
+      providerAndroid: kDebugMode ? const AndroidDebugProvider() : const AndroidPlayIntegrityProvider(),
+      providerApple: kDebugMode ? const AppleDebugProvider() : const AppleDeviceCheckProvider(),
     );
-  } else {
-    await Firebase.initializeApp();
+    // NOTE: appVerificationDisabledForTesting is intentionally NOT set here
+    // because it only works for test phone numbers, NOT real phone numbers.
+    // Real numbers need a valid App Check attestation token (above).
+
+    // Initialize FCM and inject the navigator key for deep-link navigation
+    final fcmService = FCMService();
+    fcmService.navigatorKey = navigatorKey;
+    await fcmService.initialize();
+
+    // Initialize Analytics
+    FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
+  } catch (e) {
+    debugPrint('Initialization error: $e');
   }
 
-  // Seed initial data (temporary call)
-  await FirebaseService().seedInitialData();
+  // Use a targeted error boundary for the top-level app
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('Global Flutter Error: ${details.exception}');
+  };
 
   runApp(const MyApp());
 }
@@ -50,22 +78,29 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ProductProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
         ChangeNotifierProvider(create: (_) => WishlistProvider()),
+        ChangeNotifierProvider(create: (_) => PreviewProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, NotificationProvider>(
+          create: (_) => NotificationProvider(),
+          update: (_, auth, notif) =>
+              notif!..updateUser(auth.currentUser?.uid, isAdmin: auth.isAdmin),
+        ),
+        ChangeNotifierProvider(create: (_) => LanguageProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationSettingsProvider()),
       ],
       child: MaterialApp(
         title: AppStrings.appName,
         debugShowCheckedModeBanner: false,
+        navigatorKey: navigatorKey,
         theme: ThemeData(
           useMaterial3: true,
-          colorScheme: const ColorScheme.dark(
+          colorScheme: ColorScheme.dark(
             primary: AppColors.gold,
             secondary: AppColors.softGold,
             surface: AppColors.surface,
-            background: AppColors.background,
             error: AppColors.errorRed,
             onPrimary: AppColors.black,
             onSecondary: AppColors.black,
             onSurface: AppColors.textPrimary,
-            onBackground: AppColors.textPrimary,
             onError: AppColors.black,
           ),
           scaffoldBackgroundColor: AppColors.background,
@@ -129,21 +164,21 @@ class MyApp extends StatelessWidget {
             fillColor: AppColors.surface,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.cardBorder),
+              borderSide: BorderSide(color: AppColors.cardBorder),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.cardBorder),
+              borderSide: BorderSide(color: AppColors.cardBorder),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.gold, width: 1.5),
+              borderSide: BorderSide(color: AppColors.gold, width: 1.5),
             ),
-            labelStyle: const TextStyle(color: AppColors.textSecondary),
-            hintStyle: const TextStyle(color: AppColors.textTertiary),
+            labelStyle: TextStyle(color: AppColors.textSecondary),
+            hintStyle: TextStyle(color: AppColors.textTertiary),
           ),
         ),
-        home: const SplashScreen(),
+        home: const PresenceWrapper(child: AuthWrapper()),
       ),
     );
   }

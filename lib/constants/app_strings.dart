@@ -1,8 +1,12 @@
+import '../config/whitelabel_config.dart';
+
 class AppStrings {
+  static BaseConfig get _config => AppEnvironment.config;
+
   // App
-  static const String appName = 'Vishal Jewellers';
-  static const String appTagline = 'Dharukawala';
-  static const String logoPath = 'assets/logo.png';
+  static String get appName => _config.appName;
+  static String get appTagline => _config.appTagline;
+  static String get logoPath => _config.logoPath;
 
   // Authentication
   static const String login = 'Login';
@@ -14,13 +18,6 @@ class AppStrings {
   static const String forgotPassword = 'Forgot Password?';
   static const String dontHaveAccount = "Don't have an account?";
   static const String alreadyHaveAccount = "Already have an account?";
-
-  // Role Selection
-  static const String selectRole = 'Select Your Role';
-  static const String wholesaler = 'Wholesaler';
-  static const String retailer = 'Retailer';
-  static const String wholesalerDesc = 'Bulk orders & uploads';
-  static const String retailerDesc = 'Browse & order designs';
 
   // Company Details
   static const String companyDetails = 'Company Information';

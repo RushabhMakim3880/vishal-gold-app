@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:vishal_gold/constants/app_colors.dart';
-import 'package:vishal_gold/providers/auth_provider.dart';
-import 'package:vishal_gold/providers/order_provider.dart';
-import 'package:vishal_gold/screens/order/order_detail_screen.dart';
+import 'package:vishal_jewelers/constants/app_colors.dart';
+import 'package:vishal_jewelers/providers/auth_provider.dart';
+import 'package:vishal_jewelers/providers/order_provider.dart';
+import 'package:vishal_jewelers/screens/order/order_detail_screen.dart';
 import 'dart:math';
 
 class OrderHistoryScreen extends StatefulWidget {
@@ -46,12 +46,12 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         centerTitle: true,
         backgroundColor: AppColors.background,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.white),
+        iconTheme: IconThemeData(color: AppColors.white),
       ),
       body: Consumer<OrderProvider>(
         builder: (context, orderProvider, child) {
           if (orderProvider.isLoading && orderProvider.orders.isEmpty) {
-            return const Center(
+            return Center(
               child: CircularProgressIndicator(color: AppColors.gold),
             );
           }
@@ -64,7 +64,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                   Icon(
                     Icons.shopping_bag_outlined,
                     size: 80,
-                    color: AppColors.grey.withOpacity(0.3),
+                    // ignore: deprecated_member_use
+                    color: AppColors.grey.withValues(alpha: 0.3),
                   ),
                   const SizedBox(height: 20),
                   Text(
@@ -100,7 +101,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             child: ListView.separated(
               padding: const EdgeInsets.all(20),
               itemCount: orderProvider.orders.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              separatorBuilder: (_, _) => const SizedBox(height: 16),
               itemBuilder: (context, index) {
                 final order = orderProvider.orders[index];
                 return _OrderCard(order: order);
@@ -129,10 +130,12 @@ class _OrderCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.grey.withOpacity(0.1)),
+        // ignore: deprecated_member_use
+        border: Border.all(color: AppColors.grey.withValues(alpha: 0.1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            // ignore: deprecated_member_use
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -245,9 +248,11 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        // ignore: deprecated_member_use
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3)),
+        // ignore: deprecated_member_use
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:vishal_gold/models/order.dart';
-import 'package:vishal_gold/models/cart_item.dart';
-import 'package:vishal_gold/services/firebase_service.dart';
+import 'package:vishal_jewelers/models/order.dart';
+import 'package:vishal_jewelers/models/cart_item.dart';
+import 'package:vishal_jewelers/services/firebase_service.dart';
 
 class OrderProvider with ChangeNotifier {
   final FirebaseService _firebaseService = FirebaseService();
@@ -57,40 +57,48 @@ class OrderProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Convert cart items to order items
-      final orderItems = cartItems.map((cartItem) {
-        final product = cartItem.product;
-        if (product == null) {
-          throw 'Product details missing for cart item: ${cartItem.productId}';
-        }
+      final orderItems = await Future.wait(
+        cartItems.map((cartItem) async {
+          final product = cartItem.product;
+          if (product == null) {
+            throw 'Product details missing for item ${cartItem.productId}';
+          }
 
-        return {
-          'productId': cartItem.productId,
-          'tagNumber': product.tagNumber,
-          'grossWeight': product.grossWeight,
-          'netWeight': product.netWeight,
-          'purity': product.purity,
-          'category': product.category,
-          'quantity': cartItem.quantity,
-          'imageUrls': product.imageUrls,
-        };
-      }).toList();
+          return {
+            'productId': cartItem.productId,
+            'tagNumber': product.tagNumber,
+            'name': product.name,
+            'grossWeight': product.grossWeight,
+            'netWeight': product.netWeight,
+            'purity': product.purity,
+            'category': product.category,
+            'categoryDisplay': product.categoryDisplay,
+            'quantity': cartItem.quantity,
+            'imageUrls': product.imageUrls,
+          };
+        }),
+      );
+
+      final totalNetWeight = cartItems.fold<double>(
+        0.0,
+        (sum, item) => sum + ((item.product?.netWeight ?? 0.0) * item.quantity),
+      );
+
+      final totalGrossWeight = cartItems.fold<double>(
+        0.0,
+        (sum, item) =>
+            sum + ((item.product?.grossWeight ?? 0.0) * item.quantity),
+      );
 
       // Create order data
       final orderData = {
         'userId': userId,
         'items': orderItems,
         'totalItems': cartItems.fold(0, (sum, item) => sum + item.quantity),
-        'totalGrossWeight': cartItems.fold(
-          0.0,
-          (sum, item) =>
-              sum + ((item.product?.grossWeight ?? 0.0) * item.quantity),
-        ),
-        'totalNetWeight': cartItems.fold(
-          0.0,
-          (sum, item) =>
-              sum + ((item.product?.netWeight ?? 0.0) * item.quantity),
-        ),
+        'totalAmount':
+            totalNetWeight, // Assuming totalAmount is supposed to be the net weight.
+        'totalGrossWeight': totalGrossWeight,
+        'totalNetWeight': totalNetWeight,
         'status': 'pending',
         'createdAt': DateTime.now().toIso8601String(),
         ...?additionalData,
